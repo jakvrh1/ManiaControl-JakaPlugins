@@ -14,10 +14,14 @@ class TrackmaniaScores {
 	public $matchPointsBlueTeam;
 	public $matchpointsRedTeam;
 	public $round;
+	public $blueTeamPlayers;
+	public $redTeamPlayers;
 
 	function __construct() {
 		$this->round = 0;
 		$this->matchPointsBlueTeam = 0;
 		$this->matchpointsRedTeam = 0;
+		$this->blueTeamPlayers = array();
+		$this->redTeamPlayers = array();
 	}
 }

@@ -63,11 +63,15 @@ class Jaka implements Plugin, CallbackListener {
 	// TeamScore data
 	private $round = 0;
 
+	/** @var \Jaka\TrackmaniaScores $matchScore */
+	private $matchScore = null;
+
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::prepare()
 	 */
 	public static function prepare(ManiaControl $maniaControl) {
 		// TODO: Implement prepare() method.
+
 	}
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::load()
@@ -75,8 +79,7 @@ class Jaka implements Plugin, CallbackListener {
 	public function load(ManiaControl $maniaControl) {
 		$this->maniaControl = $maniaControl;
 		// TODO: Implement load() method.
-
-		$this->maniaControl = $maniaControl;
+		$this->matchScore = new TrackmaniaScores();
 
 		// Settings
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_TITLE, 'Team Scores');
@@ -104,6 +107,7 @@ class Jaka implements Plugin, CallbackListener {
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_SCORES, $this, 'updateTeamScores');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::MP_ENDROUNDSTART, $this, 'endRoundStart');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::MP_ENDROUNDEND, $this, 'endRoundEnd');
+		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::BEGINMAP, $this, 'beginMap');
 
 		$this->updateManialink = true;
 
@@ -122,20 +126,56 @@ class Jaka implements Plugin, CallbackListener {
 		return true;
 	}
 
+	public function beginMap() {
+		var_dump("beginMap");
+		$this->matchScore = new TrackmaniaScores();
+		$this->matchScore->round = 0;
+	}
+
 	public function endRoundStart() {
-		/*var_dump("End Round Start");
-		$this->displayWidget();*/
+		var_dump("End Round Start");
+		$this->matchScore->round += 1;
+		//$this->displayWidget();*/
 
 	}
 
 	public function endRoundEnd() {
-		/*var_dump("End Round End");
-		$this->closeWidget(self::SETTING_WIDGET_TITLE);
+		var_dump("End Round End");
+		/*$this->closeWidget(self::SETTING_WIDGET_TITLE);
 		$this->closeWidget(self::SETTING_WIDGET_INDIVIDUAL_SCORES);*/
 
 	}
 
 	public function updateTeamScores(OnScoresStructure $scores) {
+		var_dump("updateTeamScores");
+		$this->matchScore->matchPointsBlueTeam = $scores->getTeamScores()[0]->getMatchPoints();
+		$this->matchScore->matchpointsRedTeam = $scores->getTeamScores()[1]->getMatchPoints();
+
+		foreach($scores->getPlayerScores() as $playerScore) {
+			$this->matchScore->blueTeamPlayers[$playerScore->getPlayer()->login] = new TrackmaniaPlayer($playerScore->getPlayer()->login,
+			                                                                                            $playerScore->getPlayer()->nickname,
+			                                                                                            $playerScore->getBestRaceTime(),
+			                                                                                            $playerScore->getRoundPoints(),
+			                                                                                            $playerScore->getMapPoints(),
+			                                                                                            $playerScore->getMatchPoints());
+		}
+
+		//Getting proper data
+		/*var_dump("Round -> ".$this->matchScore->round);
+		var_dump("BlueTeam MatchScore -> ".$this->matchScore->matchPointsBlueTeam);
+		var_dump("RedTeam MatchScore -> ".$this->matchScore->matchpointsRedTeam);
+
+		foreach($this->matchScore->blueTeamPlayers as $index => $player) {
+			var_dump("\nindex: ".$index);
+			var_dump("login -> ".$player->login);
+			var_dump("nickname -> ".$player->nickname);
+			var_dump("best race time -> ".$player->bestTime);
+			var_dump("round points -> ".$player->roundPoints);
+			var_dump("map points -> ".$player->mapPoints);
+			var_dump("match points -> ".$player->matchPoints);
+			var_dump("\n");
+		}
+		var_dump("\n\n");*/
 
 		/*var_dump("Sections - ".$scores->getSection());
 
@@ -145,8 +185,6 @@ class Jaka implements Plugin, CallbackListener {
 			var_dump("RoundsPoints - ".$teamScore->getRoundPoints());
 			var_dump("MapPoints - ".$teamScore->getMapPoints());
 		}*/
-
-
 
 		/*foreach($scores->getPlayerScores() as $playerScore) {
 			var_dump("Login -> ".$playerScore->getPlayer()->login);
@@ -159,9 +197,8 @@ class Jaka implements Plugin, CallbackListener {
 			//var_dump("Name -> ".$playerScore->getPlayer()->getUsageInformation());
 			var_dump("\n\n");
 		}*/
-
-
 	}
+
 
 	public function displayWidget() {
 		if($this->active) {
