@@ -6,7 +6,7 @@
  * Time: 5:26 PM
  */
 
-namespace Jaka;
+namespace JakaPlugins;
 
 
 class TrackmaniaScores {

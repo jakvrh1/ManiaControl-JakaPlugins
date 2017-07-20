@@ -6,7 +6,7 @@
  * Time: 9:28 PM
  */
 
-namespace Jaka;
+namespace JakaPlugins;
 
 
 class TrackmaniaPlayer {
