@@ -11,16 +11,24 @@ namespace Jaka;
 
 class TrackmaniaScores {
 
-	public $matchPointsBlueTeam;
-	public $matchpointsRedTeam;
+	public $mapPointsBlueTeam;
+	public $mapPointsRedTeam;
 	public $round;
 	public $blueTeamPlayers;
 	public $redTeamPlayers;
 
+	public $blueTeamPlayerPointsSum;
+	public $redTeamPlayerPointsSum;
+
 	function __construct() {
-		$this->round = 0;
-		$this->matchPointsBlueTeam = 0;
-		$this->matchpointsRedTeam = 0;
+		$this->round = 1;
+
+		$this->mapPointsBlueTeam = array();
+		$this->mapPointsRedTeam = array();
+
+		$this->blueTeamPlayerPointsSum = array();
+		$this->redTeamPlayerPointsSum = array();
+
 		$this->blueTeamPlayers = array();
 		$this->redTeamPlayers = array();
 	}

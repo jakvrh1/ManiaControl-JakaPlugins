@@ -67,7 +67,7 @@ class Jaka implements Plugin, CallbackListener {
 	private $active = false;
 
 	// TeamScore data
-	private $round = 0;
+	//private $round = 0;
 
 	/** @var \Jaka\TrackmaniaScores $matchScore */
 	private $matchScore = null;
@@ -99,15 +99,23 @@ class Jaka implements Plugin, CallbackListener {
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_TEAMSCORES, true);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_INDIVIDUAL_SCORES, true);
 
-
+/*
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_POSX_TEAMSCORES, 70);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_POSY_TEAMSCORES, 57);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_WIDTH_TEAMSCORES, 42);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_HEIGHT_TEAMSCORES, 31);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_LINE_HEIGHT_TEAMSCORES, 4);
+		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_LINE_COUNT_TEAMSCORES, 18);*/
+		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_POSX_TEAMSCORES, 139);
+		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_POSY_TEAMSCORES, -9);
+		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_WIDTH_TEAMSCORES, 42);
+		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_HEIGHT_TEAMSCORES, 31);
+		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_LINE_HEIGHT_TEAMSCORES, 4);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_LINE_COUNT_TEAMSCORES, 18);
 
-		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_POSX_INDIVIDUAL_SCORES, -25);
+
+
+		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_POSX_INDIVIDUAL_SCORES, 0);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_POSY_INDIVIDUAL_SCORES, 57);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_WIDTH_INDIVIDUAL_SCORES, 150);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_WIDGET_HEIGHT_INDIVIDUAL_SCORES, 31);
@@ -124,6 +132,8 @@ class Jaka implements Plugin, CallbackListener {
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::BEGINMAP, $this, 'beginMap');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONFINISHLINE, $this, 'handleFinishCallback');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONGIVEUP, $this, 'handleGiveUp');
+		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONEVENTSTARTLINE, $this, 'handleStartRoundStart');
+		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::ENDMAP, $this, 'handleEndMap');
 
 
 		$this->updateManialink = true;
@@ -146,25 +156,34 @@ class Jaka implements Plugin, CallbackListener {
 
 	public function resetScores() {
 		$this->matchScore = new TrackmaniaScores();
-		$this->matchScore->round = 1;
 		$this->playerBestTimes = array();
 
-		$this->redPlayersBestTimes = array();
-		$this->bluePlayersBestTimes = array();
+		/*$this->redPlayersBestTimes = array();
+		$this->bluePlayersBestTimes = array();*/
 	}
 
 	public function beginMap() {
 		//var_dump("beginMap");
 		$this->resetScores();
+		//$this->closeAllWidgets();
 	}
 
+	public function handleEndMap() {
+		$this->closeAllWidgets();
+	}
+
+	public function handleStartRoundStart() {
+		var_dump("TEST");
+		$this->closeAllWidgets();
+	}
 
 
 	public function endRoundStart() {
 		//var_dump("End Round Start");
-		$this->matchScore->round += 1;
+
 		$this->displayIndividualScores();
-		//$this->displayWidget();
+		//$this->displayTeamScores();
+		$this->displayWidget();
 
 		/*var_dump("OUTSIDE");
 		foreach($this->maniaControl->getPlayerManager()- as $spec) {
@@ -175,11 +194,17 @@ class Jaka implements Plugin, CallbackListener {
 
 	}
 
-	public function endRoundEnd() {
-		//var_dump("End Round End");
-		/*$this->closeWidget(self::SETTING_WIDGET_TITLE);
+	public function closeAllWidgets() {
+		$this->closeWidget(self::SETTING_WIDGET_TITLE);
 		$this->closeWidget(self::SETTING_WIDGET_INDIVIDUAL_SCORES);
-		$this->closeWidget(self::INDIVIDUAL_SCORES);*/
+		$this->closeWidget(self::INDIVIDUAL_SCORES);
+		$this->closeWidget(self::SETTING_WIDGET_TEAMSCORE_LIVE);
+	}
+
+	public function endRoundEnd() {
+		$this->matchScore->round += 1;
+		//var_dump("End Round End");
+		//$this->closeAllWidgets();
 	}
 
 	public function handleGiveUp() {
@@ -187,48 +212,48 @@ class Jaka implements Plugin, CallbackListener {
 
 	}
 
-	public function handleFinishCallback(OnWayPointEventStructure $structure) {
-
-		var_dump("Player {$structure->getLogin()} is in team {$structure->getPlayer()->teamId}");
+	public function checkIfPlayersConflictsTeam(OnWayPointEventStructure $structure) {
 		$login = trim($structure->getLogin());
 
-		if($structure->getPlayer()->teamId == self::BLUE_TEAM) {
-			if(array_key_exists($login, $this->bluePlayersBestTimes)) {
-				if($this->bluePlayersBestTimes[$login] > $structure->getRaceTime() && $structure->getRaceTime() != 0) {
-					$this->bluePlayersBestTimes[$login] = $structure->getRaceTime();
-				}
+		if(array_key_exists($login, $this->matchScore->blueTeamPlayers)) {
+			if($structure->getPlayer()->teamId != $this->matchScore->blueTeamPlayers[$login]->teamId) {
+				$this->matchScore->redTeamPlayers[$login] = $this->matchScore->blueTeamPlayers[$login];
+				$this->matchScore->redTeamPlayers[$login]->teamId = self::RED_TEAM;
+				unset($this->matchScore->blueTeamPlayers[$login]);
 			}
-			else {
-				if($structure->getRaceTime() != 0) {
-					$this->bluePlayersBestTimes[$login] = $structure->getRaceTime();
-				}
+
+		}
+		else if(array_key_exists($login, $this->matchScore->redTeamPlayers)) {
+			if($structure->getPlayer()->teamId != $this->matchScore->redTeamPlayers[$login]->teamId) {
+				$this->matchScore->blueTeamPlayers[$login] = $this->matchScore->redTeamPlayers[$login];
+				$this->matchScore->blueTeamPlayers[$login]->teamId = self::BLUE_TEAM;
+				unset($this->matchScore->redTeamPlayers[$login]);
 			}
 		}
-		else if($structure->getPlayer()->teamId == self::RED_TEAM) {
-			if(array_key_exists($login, $this->redPlayersBestTimes)) {
-				if($this->redPlayersBestTimes[$login] > $structure->getRaceTime() && $structure->getRaceTime() != 0) {
-					$this->redPlayersBestTimes[$login] = $structure->getRaceTime();
-				}
-			}
-			else {
-				if($structure->getRaceTime() != 0) {
-					$this->redPlayersBestTimes[$login] = $structure->getRaceTime();
-				}
-			}
-		}
+	}
 
 
-			//changed1
-		/*if(array_key_exists(trim($structure->getLogin()), $this->playerBestTimes)) {
-			if($this->playerBestTimes[trim($structure->getLogin())] >= $structure->getRaceTime() && $structure->getRaceTime() != 0) {
-				$this->playerBestTimes[trim($structure->getLogin())] =  $structure->getRaceTime();
+
+	public function handleFinishCallback(OnWayPointEventStructure $structure) {
+
+		//var_dump("Player {$structure->getLogin()} is in team {$structure->getPlayer()->teamId}");
+		$login = trim($structure->getLogin());
+
+		if(array_key_exists($login, $this->playerBestTimes)) {
+			if($this->playerBestTimes[$login] >= $structure->getRaceTime() && $structure->getRaceTime() != 0) {
+				$this->playerBestTimes[$login] =  $structure->getRaceTime();
 			}
 		}
 		else {
 			if($structure->getRaceTime() != 0) {
-				$this->playerBestTimes[trim($structure->getLogin())] =  $structure->getRaceTime();
+				$this->playerBestTimes[$login] =  $structure->getRaceTime();
 			}
-		}*/
+		}
+		$this->checkIfPlayersConflictsTeam($structure);
+
+
+
+
 	}
 
 
@@ -290,19 +315,23 @@ class Jaka implements Plugin, CallbackListener {
 
 
 
-		foreach($this->bluePlayersBestTimes as $key => $bluePlayersBestTime) {
-			if(array_key_exists($key,$this->matchScore->blueTeamPlayers )) {
+		foreach($this->playerBestTimes as $key => $curBest) {
+			if(array_key_exists($key, $this->matchScore->blueTeamPlayers )) {
 				//var_dump("Updated BLUE user {$key}!");
-				$this->matchScore->blueTeamPlayers[$key]->currentBestTime = $bluePlayersBestTime;
+				$this->matchScore->blueTeamPlayers[$key]->currentBestTime = $curBest;
+			}
+			else if(array_key_exists($key,$this->matchScore->redTeamPlayers )) {
+				//var_dump("Updated RED user {$key}!");
+				$this->matchScore->redTeamPlayers[$key]->currentBestTime = $curBest;
 			}
 		}
 
-		foreach($this->redPlayersBestTimes as $key => $redPlayersBestTime) {
+		/*foreach($this->redPlayersBestTimes as $key => $playersBestTime) {
 			if(array_key_exists($key,$this->matchScore->redTeamPlayers )) {
 				//var_dump("Updated RED user {$key}!");
 				$this->matchScore->redTeamPlayers[$key]->currentBestTime = $redPlayersBestTime;
 			}
-		}
+		}*/
 	}
 
 	public function displayIndividualScores() {
@@ -326,6 +355,9 @@ class Jaka implements Plugin, CallbackListener {
 
 		/** @var \Jaka\TrackmaniaPlayer $player */
 		foreach($bluePlayers as $player) {
+			if($index == 5) {
+				break;
+			}
 			/*var_dump($player->login);
 			if($player->isSpectator) {
 				var_dump("IS SPEC!");
@@ -335,7 +367,7 @@ class Jaka implements Plugin, CallbackListener {
 				continue;
 			}
 			if($player->currentBestTime == -1) {
-				var_dump("PLAYER {$player->login} has bad time {$player->currentBestTime}");
+				//var_dump("PLAYER {$player->login} has bad time {$player->currentBestTime}");
 				continue;
 			}
 
@@ -352,8 +384,8 @@ class Jaka implements Plugin, CallbackListener {
 			$rankLabel->setX($width * -0.47);
 			$rankLabel->setSize($width * 0.06, $lineHeight);
 			$rankLabel->setTextSize(2);
-			$rankLabel->setTextPrefix('$o');
-			$rankLabel->setText($player->matchPoints);
+			$rankLabel->setTextPrefix('$o$FF6');
+			$rankLabel->setText($player->mapPoints);
 			$rankLabel->setTextEmboss(true);
 
 			//Name
@@ -394,6 +426,9 @@ class Jaka implements Plugin, CallbackListener {
 
 		/** @var \Jaka\TrackmaniaPlayer $player */
 		foreach($redPlayers as $player) {
+			if($index == 5) {
+				break;
+			}
 			/*var_dump($player->login);
 			if($player->isSpectator) {
 				var_dump("IS SPEC!");
@@ -403,7 +438,7 @@ class Jaka implements Plugin, CallbackListener {
 				continue;
 			}
 			if($player->currentBestTime == -1) {
-				var_dump("PLAYER {$player->login} has bad time {$player->currentBestTime}");
+				//var_dump("PLAYER {$player->login} has bad time {$player->currentBestTime}");
 				continue;
 			}
 
@@ -420,8 +455,8 @@ class Jaka implements Plugin, CallbackListener {
 			$rankLabel->setX($width * -0.47);
 			$rankLabel->setSize($width * 0.06, $lineHeight);
 			$rankLabel->setTextSize(2);
-			$rankLabel->setTextPrefix('$o');
-			$rankLabel->setText($player->matchPoints);
+			$rankLabel->setTextPrefix('$o$FF6');
+			$rankLabel->setText($player->mapPoints);
 			$rankLabel->setTextEmboss(true);
 
 			//Name
@@ -458,10 +493,34 @@ class Jaka implements Plugin, CallbackListener {
 		$this->maniaControl->getManialinkManager()->sendManialink($maniaLink, false);
 	}
 
-	public function updateScores(OnScoresStructure $scores) {
+	public function sumPlayersPointsToEachTeam(OnScoresStructure $scores) {
 
-		$this->matchScore->matchPointsBlueTeam = $scores->getTeamScores()[0]->getMatchPoints();
-		$this->matchScore->matchpointsRedTeam = $scores->getTeamScores()[1]->getMatchPoints();
+		foreach ($scores->getPlayerScores() as $playerScore) {
+
+		}
+	}
+
+	public function updateScores(OnScoresStructure $scores) {
+		$round = $this->matchScore->round;
+		var_dump("IT IS ROUND: {$round}");
+
+		$this->matchScore->mapPointsBlueTeam[$round] = $scores->getTeamScores()[self::BLUE_TEAM]->getMapPoints();
+		$this->matchScore->mapPointsRedTeam[$round] = $scores->getTeamScores()[self::RED_TEAM]->getMapPoints();
+
+		if(!array_key_exists($round, $this->matchScore->blueTeamPlayerPointsSum)) {
+			$this->matchScore->blueTeamPlayerPointsSum[$round] = 0;
+			$this->matchScore->redTeamPlayerPointsSum[$round] = 0;
+
+			foreach($scores->getPlayerScores() as $playerScore) {
+				if($playerScore->getPlayer()->teamId == self::BLUE_TEAM) {
+					$this->matchScore->blueTeamPlayerPointsSum[$round] += $playerScore->getRoundPoints();
+				}
+				else if($playerScore->getPlayer()->teamId == self::RED_TEAM) {
+					$this->matchScore->redTeamPlayerPointsSum[$round] += $playerScore->getRoundPoints();
+				}
+			}
+		}
+
 
 		foreach($scores->getPlayerScores() as $playerScore) {
 
@@ -474,9 +533,11 @@ class Jaka implements Plugin, CallbackListener {
 				                                                                                                  $playerScore->getMatchPoints(),
 				                                                                                                  $playerScore->getPlayer()->teamId,
 				                                                                                                  false);
+
+
 			}
 
-			if($playerScore->getPlayer()->teamId == self::RED_TEAM) {
+			else if($playerScore->getPlayer()->teamId == self::RED_TEAM) {
 				$this->matchScore->redTeamPlayers[trim($playerScore->getPlayer()->login)] = new TrackmaniaPlayer(trim($playerScore->getPlayer()->login),
 				                                                                                                  $playerScore->getPlayer()->nickname,
 				                                                                                                  $playerScore->getBestRaceTime(),
@@ -485,11 +546,25 @@ class Jaka implements Plugin, CallbackListener {
 				                                                                                                  $playerScore->getMatchPoints(),
 				                                                                                                  $playerScore->getPlayer()->teamId,
 				                                                                                                  false);
+
+
 			}
 
 
 		}
+
+
+		$this->displayTeamScores();
 		$this->displayIndividualScores();
+
+		/*var_dump("SCORES");
+		if(array_key_exists($round, $this->matchScore->blueTeamPlayerPointsSum)) {
+			var_dump("BLUE TEAM: {$this->matchScore->blueTeamPlayerPointsSum[$round]}");
+		}
+		if(array_key_exists($round, $this->matchScore->redTeamPlayerPointsSum)) {
+			var_dump("RED TEAM: {$this->matchScore->redTeamPlayerPointsSum[$round]}}");
+		}
+*/
 	}
 
 
@@ -500,7 +575,7 @@ class Jaka implements Plugin, CallbackListener {
 				$this->displayTeamScoreWidget();
 			}
 			if ($this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_WIDGET_INDIVIDUAL_SCORES)) {
-				$this->displayIndividualScoreWidget();
+				//$this->displayIndividualScoreWidget();
 			}
 		}
 	}
@@ -542,20 +617,6 @@ class Jaka implements Plugin, CallbackListener {
 
 		// Send manialink
 		$this->maniaControl->getManialinkManager()->sendManialink($maniaLink, false);
-	}
-
-	public function displayTeamScores() {
-		/*$posX         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_WIDGET_POSX_TEAMSCORES);
-		$posY         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_WIDGET_POSY_TEAMSCORES);
-		$width        = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_WIDGET_WIDTH_TEAMSCORES);
-		$height       = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_WIDGET_HEIGHT_TEAMSCORES);
-
-		$maniaLink = new ManiaLink(self::MLID_CHECKPOINTS_LIVE_WIDGETTIMES);
-		$frame     = new Frame();
-		$maniaLink->addChild($frame);
-		$frame->setPosition($posX, $posY);*/
-
-
 	}
 
 	public function displayTeamScoreWidget() {
@@ -607,6 +668,72 @@ class Jaka implements Plugin, CallbackListener {
 		$frame->setPosition($posX, $posY);
 
 		// TODO: Implement showing teamscore
+		/*var_dump("TEAMSCORE CALLED");
+		var_dump("POINTSUM B COUNT:".count($this->matchScore->blueTeamPlayerPointsSum));
+		var_dump("POINTSUM R COUNT:".count($this->matchScore->redTeamPlayerPointsSum));
+		var_dump("MAPPOINTS B COUNT:".count($this->matchScore->mapPointsBlueTeam));
+		var_dump("MAPPOINTS r COUNT:".count($this->matchScore->mapPointsRedTeam));*/
+		$index = 1;
+		for($i = $this->matchScore->round; $i >= 1; $i -= 1) {
+			if($index == 7) {
+				break;
+			}
+			$y = -1. - $index * $lineHeight;
+
+			$teamScoreFrame = new Frame();
+			$frame->addChild($teamScoreFrame);
+			$teamScoreFrame->setPosition(0, $y + 13);
+
+			//Rank
+			$rankLabel = new Label();
+			$teamScoreFrame->addChild($rankLabel);
+			$rankLabel->setHorizontalAlign($rankLabel::LEFT);
+			$rankLabel->setX($width * -0.44);
+			$rankLabel->setSize($width * 0.06, $lineHeight);
+			$rankLabel->setTextSize(1);
+			$rankLabel->setTextPrefix('$o');
+			$rankLabel->setText("\$CCCr\$FF6{$i}");
+			$rankLabel->setTextEmboss(true);
+
+			//Name
+			$nameLabel = new Label();
+			$teamScoreFrame->addChild($nameLabel);
+			$nameLabel->setHorizontalAlign($nameLabel::LEFT);
+			$nameLabel->setX($width * -0.25);
+			$nameLabel->setSize($width * 0.6, $lineHeight);
+			$nameLabel->setTextSize(1);
+			$nameLabel->setText("\$CCCPoints: \$33F{$this->matchScore->blueTeamPlayerPointsSum[$i]}\$CCC<>\$F30{$this->matchScore->redTeamPlayerPointsSum[$i]}");
+			$nameLabel->setTextEmboss(true);
+
+			//Time
+			$timeLabel = new Label();
+			$teamScoreFrame->addChild($timeLabel);
+			$timeLabel->setHorizontalAlign($timeLabel::RIGHT);
+			$timeLabel->setX($width * 0.45);
+			$timeLabel->setSize($width * 0.25, $lineHeight);
+			$timeLabel->setTextSize(1);
+			$timeLabel->setText("$33F{$this->matchScore->mapPointsBlueTeam[$i]}\$CCC<>\$F30{$this->matchScore->mapPointsRedTeam[$i]}");
+			$timeLabel->setTextEmboss(true);
+
+			$index += 1;
+
+		}
+		/*var_dump("ROUND: {$this->matchScore->round}");
+		foreach ($this->matchScore->blueTeamPlayerPointsSum as $i) {
+			var_dump("BLUESUM: {$i}");
+		}
+**/
+		/*foreach ($this->matchScore->blueTeamPlayers as $i) {
+			var_dump("MAP POINTS: {$i->mapPoints}");
+		}
+
+		foreach($this->matchScore->mapPointsBlueTeam as $i) {
+			var_dump("MATHCH: {$i}");
+		}*/
+
+
+
+		$this->maniaControl->getManialinkManager()->sendManialink($maniaLink, false);
 
 	}
 
@@ -623,6 +750,7 @@ class Jaka implements Plugin, CallbackListener {
 		$this->closeWidget(self::SETTING_WIDGET_TITLE);
 		$this->closeWidget(self::SETTING_WIDGET_INDIVIDUAL_SCORES);
 		$this->closeWidget(self::INDIVIDUAL_SCORES);
+		$this->closeWidget(self::SETTING_WIDGET_TEAMSCORE_LIVE);
 	}
 
 	/**
