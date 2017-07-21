@@ -21,7 +21,7 @@ class TrackmaniaScores {
 	public $redTeamPlayerPointsSum;
 
 	function __construct() {
-		$this->round = 1;
+		$this->round = 0;
 
 		$this->mapPointsBlueTeam = array();
 		$this->mapPointsRedTeam = array();
