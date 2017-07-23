@@ -18,14 +18,12 @@ use FML\Controls\Quad;
 use FML\Controls\Quads\Quad_Bgs1InRace;
 use ManiaControl\Utils\Formatter;
 
-
-
 // TODO: Maintain plugin class PHPDoc
 /**
  * Plugin Description
  *
  * @author  Jaka Vrhovec
- * @version 1.1
+ * @version 1.2
  */
 class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 	/*
@@ -33,7 +31,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 	 */
 	// TODO: Maintain plugin metadata constants
 	const ID      = 120;
-	const VERSION = 1.1;
+	const VERSION = 1.2;
 	const NAME                          = 'Team Score Plugin';
 	const AUTHOR                        = 'Jaka Vrhovec';
 
@@ -43,15 +41,13 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 
 	// Team Score properties
 	const SETTING_TEAMSCORE_TITLE = 'Team Score';
-	const SETTING_TEAMSCORE = 'Team Score display';
-	const SETTING_TEAMSCORE_MAXPLAYERS = "Team Score max players";
-	const SETTING_TEAMSCORE_MAXTEAMSCORE = "Team Score max round";
+	const SETTING_TEAMSCORE = 'Team Score is display';
+	const SETTING_TEAMSCORE_MAXPLAYERS = "Max players displayed";
+	const SETTING_TEAMSCORE_MAXTEAMSCORE = "Max rounds displayed";
 	const SETTING_TEAMSCORE_POSX = 'Team Score Position: X';
 	const SETTING_TEAMSCORE_POSY = 'Team Score Position: Y';
 	const SETTING_TEAMSCORE_WIDTH = 'Team Score Width';
 	const SETTING_TEAMSCORE_HEIGHT = 'Team Score Height';
-	//const SETTING_TEAMSCORE_LINE_COUNT = 'Team Score Displayed Lines Count';
-	//const SETTING_TEAMSCORE_LINE_HEIGHT = 'Team Score Line Height';
 	const LINE_HEIGHT = 4;
 
 	const ACTION_SPEC = 'Spec.Action';
@@ -59,7 +55,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 	/** @var ManiaControl $maniaControl */
 	private $maniaControl = null;
 
-	// Gamemodes supported by the plugin
+	// Game modes supported by the plugin
 	const GAMEMODE = "Team.Script.txt";
 
 	/** @var \JakaPlugins\TrackmaniaScores $matchScore */
@@ -74,14 +70,12 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 	 * @see \ManiaControl\Plugins\Plugin::prepare()
 	 */
 	public static function prepare(ManiaControl $maniaControl) {
-		// TODO: Implement prepare() method.
 	}
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::load()
 	 */
 	public function load(ManiaControl $maniaControl) {
 		$this->maniaControl = $maniaControl;
-		// TODO: Implement load() method.
 		$this->matchScore = new TrackmaniaScores();
 
 		// Team Score settings
@@ -91,20 +85,17 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_TEAMSCORE_POSX, -139.5);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_TEAMSCORE_POSY, 75);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_TEAMSCORE_WIDTH, 40.);
-		//$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_TEAMSCORE_LINE_HEIGHT, 4.);
-
 
 		// Callbacks
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_SCORES, $this, 'updateScores');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::MP_ENDROUNDSTART, $this, 'endRoundStart');
-		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::BEGINMAP, $this, 'beginMap');
+		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::BEGINMAP, $this, 'handleBeginMap');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONFINISHLINE, $this, 'handleFinishCallback');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONEVENTSTARTLINE, $this, 'handleOnEventStartLine');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::MP_STARTROUNDSTART, $this, 'handleStartRoundStart');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::MP_PODIUMEND, $this, 'handlePodiumEnd');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::MP_PODIUMSTART, $this, 'handlePodiumStart');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONGIVEUP, $this, 'handleOnGiveUp');
-		//$this->maniaControl->getCommandManager()->registerCommandListener('skipround', $this, 'chat_skipRound', false, 'Skips round without updating score and round.');
 
 		$this->maniaControl->getTimerManager()->registerTimerListening($this, 'handle2Seconds', 2000);
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(CallbackManager::CB_MP_PLAYERMANIALINKPAGEANSWER, $this, 'handleSpec');
@@ -114,29 +105,14 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		return true;
 	}
 
-	/*public function chat_skipRound(array $chat, Player $player) {
-		$admins = $this->maniaControl->getAuthenticationManager()->getAdmins(AuthenticationManager::AUTH_LEVEL_ADMIN);
-		if (!$this->maniaControl->getAuthenticationManager()->checkPermission($player, self::)
-		) {
-			$this->maniaControl->getAuthenticationManager()->sendNotAllowed($player);
-			return;
-		}
-		$command = explode(" ", $chat[1][2]);
-
-		if (isset($command[1])) {
-			$msg = '$ff0[$<' . $player->nickname . '$>] $ff0$iHello $z$<' . $this->getTarget($command[1]) . '$>$i!';
-		} else {
-			$msg = '$ff0[$<' . $player->nickname . '$>] $ff0$iHello All!';
-		}
-		$this->sendChat($msg, $player);
-	}*/
-
+	// Displays plugin to all spectators
 	public function handle2Seconds() {
 		$this->ifSpectatorShowAllScoreWidget();
 	}
 
+	// Displays plugin to player that gives up
 	public function handleOnGiveUp(BasePlayerTimeStructure $structure) {
-		$this->displayAllScore($structure->getLogin());
+		$this->displayTeamScoreWidget($structure->getLogin());
 	}
 
 	public function isThisTeamCupScript() {
@@ -151,6 +127,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		}
 	}
 
+	// Used Drakonia handleSpec function!
 	public function handleSpec(array $callback) {
 		$actionId    = $callback[1][2];
 		$actionArray = explode('.', $actionId, 3);
@@ -173,18 +150,23 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		}
 	}
 
+	// Closes widget after podium
 	public function handlePodiumEnd() {
 		$this->closeWidget(self::SETTING_TEAMSCORE_TITLE);
 	}
 
+	// Displays widget at podium
 	public function handlePodiumStart() {
-		$this->displayAllScore(false);
+		$this->displayTeamScoreWidget(false);
 	}
 
-	public function displayAllScore($login) {
+	// Displays widget
+	public function displayTeamScoreWidget($login) {
+		// Checks if Its correct mode
 		if($this->isThisTeamCupScript()) {
+			// Checks whether user has widget enabled
 			if ($this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_TEAMSCORE)) {
-				$this->displayTeamScoresAndIndividualScores($login);
+				$this->teamScoreWidget($login);
 			}
 		}
 	}
@@ -194,34 +176,40 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		$this->playerBestTimes = array();
 	}
 
+	// Each time round starts increment round counter
 	public function handleStartRoundStart() {
 		$this->matchScore->round += 1;
 	}
 
-	public function beginMap() {
+	// After new map loads or after restart it reset scores
+	public function handleBeginMap() {
 		$this->resetScores();
 	}
 
 	public function ifSpectatorShowAllScoreWidget() {
 		foreach ($this->maniaControl->getPlayerManager()->getPlayers() as $player) {
 			if($player->isSpectator) {
-				$this->displayAllScore($player->login);
+				$this->displayTeamScoreWidget($player->login);
 			}
 		}
 	}
 
+	// After countdown 3,2,1 it closes itself automatically
 	public function handleOnEventStartLine() {
 		$this->closeWidget(self::SETTING_TEAMSCORE_TITLE);
+		$this->ifSpectatorShowAllScoreWidget();
 	}
 
-
+	// After everyone finishes display widget to everyone
 	public function endRoundStart() {
-		$this->displayAllScore(false);
+		$this->displayTeamScoreWidget(false);
 	}
 
+	// If player changes team make changes to matchScore
 	public function checkIfPlayersConflictsTeam(OnWayPointEventStructure $structure) {
 		$login = trim($structure->getLogin());
 
+		// If there's login of player in blueTeam but he finished as redTeam make swap
 		if(array_key_exists($login, $this->matchScore->blueTeamPlayers)) {
 			if($structure->getPlayer()->teamId != $this->matchScore->blueTeamPlayers[$login]->teamId) {
 				$this->matchScore->redTeamPlayers[$login] = $this->matchScore->blueTeamPlayers[$login];
@@ -230,6 +218,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 			}
 
 		}
+		// If there's login of player in redTeam but he finished as blueTeam make swap
 		else if(array_key_exists($login, $this->matchScore->redTeamPlayers)) {
 			if($structure->getPlayer()->teamId != $this->matchScore->redTeamPlayers[$login]->teamId) {
 				$this->matchScore->blueTeamPlayers[$login] = $this->matchScore->redTeamPlayers[$login];
@@ -239,6 +228,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		}
 	}
 
+	// At the end CP check if player beat his current match PB and change it accordingly
 	public function handleFinishCallback(OnWayPointEventStructure $structure) {
 		$login = trim($structure->getLogin());
 
@@ -254,9 +244,10 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		}
 
 		$this->checkIfPlayersConflictsTeam($structure);
-		$this->displayAllScore($structure->getLogin());
+		$this->displayTeamScoreWidget($structure->getLogin());
 	}
 
+	// Get logins of players that are playing (spectators don't count)
 	public function playersThatArePlayingLogins() {
 		$spectators = $this->maniaControl->getPlayerManager()->getSpectators();
 		$specLogins = array();
@@ -273,6 +264,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		return array_diff($allPlayersLogins, $specLogins);
 	}
 
+	// Get players (object) that are playing (spectators don't count)
 	public function playersThatArePlaying() {
 		$playersThatArePlayingLogins = $this->playersThatArePlayingLogins();
 		$playersThatArePlaying = array();
@@ -287,11 +279,15 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		return $playersThatArePlaying;
 	}
 
-
+	// Removes spectators and disconnected players from matchScore // their data is saved just not displayed!
 	public function removeSpectatorsAndNotConnectedPlayers() {
 		$spectators = $this->maniaControl->getPlayerManager()->getSpectators();
 		$playersThatArePlaying = $this->playersThatArePlayingLogins();
 
+		/*
+		 * Setting every player to spectator and then just iterating over
+		 * players that are currently playing and setting correct flag!
+		 * */
 		foreach($this->matchScore->blueTeamPlayers as $player) {
 			$player->isSpectator = true;
 		}
@@ -320,6 +316,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		}
 	}
 
+	// Updates players best time
 	public function updateCurrentBestTimes() {
 		foreach($this->playerBestTimes as $key => $curBest) {
 			if(array_key_exists($key, $this->matchScore->blueTeamPlayers )) {
@@ -331,6 +328,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		}
 	}
 
+	// After every round updates players and team scores and displays widget
 	public function updateScores(OnScoresStructure $scores) {
 		$round = $this->matchScore->round;
 
@@ -382,11 +380,26 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 
 
 		}
-		$this->displayAllScore(false);
+		$this->displayTeamScoreWidget(false);
 	}
 
-	public function displayTeamScoresAndIndividualScores($login) {
-		//$lines       = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_TEAMSCORE_LINE_COUNT);
+	// Removes links and shortens long names
+	public function normalizeName($name) {
+		$maxNameSize = 17;
+		if(strlen(Formatter::stripCodes($name)) <= $maxNameSize) {
+			return Formatter::stripLinks($name);
+		}
+		else {
+			$newName = $name;
+			while(strlen(Formatter::stripCodes($newName)) > $maxNameSize) {
+				$newName = substr($newName, 0, strlen($newName) - 1);
+			}
+			return Formatter::stripLinks($newName);
+		}
+	}
+
+	// Displays widget
+	public function teamScoreWidget($login) {
 		$lineHeight   = self::LINE_HEIGHT;
 		$posX         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_TEAMSCORE_POSX);
 		$posY         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_TEAMSCORE_POSY);
@@ -419,36 +432,19 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		}
 
 		$height = 8. + ($maxPlayers + $maxTeamScore + 1) * $lineHeight;
-		/*$maxPlayers += 3;
-		$maxTeamScore += 3;*/
-
 
 		// mainframe
 		$frame = new Frame();
 		$maniaLink->addChild($frame);
-		//$frame->setSize($width, $height);
 		$frame->setPosition($posX, $posY);
 
 		// Background Quad
-		/*$backgroundQuad = new Quad();
-		$frame->addChild($backgroundQuad);
-		$backgroundQuad->setSize($width, $height);
-		$backgroundQuad->setStyles($quadStyle, $quadSubstyle);*/
 		$backgroundQuad = new Quad();
 		$frame->addChild($backgroundQuad);
 		$backgroundQuad->setVerticalAlign($backgroundQuad::TOP);
 		$backgroundQuad->setSize($width + 1.05, $height);
 		$backgroundQuad->setStyles($quadStyle, $quadSubstyle);
 
-
-		/*$titleLabel = new Label();
-		$frame->addChild($titleLabel);
-		$titleLabel->setPosition(0, 20);
-		$titleLabel->setWidth($width);
-		$titleLabel->setStyle($labelStyle);
-		$titleLabel->setTextSize(2);
-		$titleLabel->setText(self::SETTING_TEAMSCORE_TITLE);
-		$titleLabel->setTranslate(true);*/
 
 		$titleLabel = new Label();
 		$frame->addChild($titleLabel);
@@ -462,33 +458,39 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 		$this->removeSpectatorsAndNotConnectedPlayers();
 		$this->updateCurrentBestTimes();
 
+		// Sort players by mapPoints
 		$playersFromBothTeams = $this->matchScore->blueTeamPlayers + $this->matchScore->redTeamPlayers;
-		usort($playersFromBothTeams, array('\JakaPlugins\TrackmaniaPlayer', 'mapPointsSort'));
+		usort($playersFromBothTeams, array('JakaPlugins\TrackmaniaPlayer', 'mapPointsSort'));
+
+		// Use index for knowing what line we are on
 		$index = 2;
+		// Count for how many players we can display
 		$displayedPlayers = 0;
+		// Count for how many team scores we can display
 		$displayedTeamScore = 0;
 
-
+		// If It's first round display only names (useful for spectators)
 		if(count($playersFromBothTeams) == 0) {
 			$playersFromBothTeams = $this->playersThatArePlaying();
 			foreach ($playersFromBothTeams as $player) {
 				if($displayedPlayers >= $maxPlayers) {
 					break;
 				}
+
 				$y = -1. - $index * $lineHeight;
 
 				$teamScoreFrame = new Frame();
 				$frame->addChild($teamScoreFrame);
 				$teamScoreFrame->setPosition(0, $y);
-				//$teamScoreFrame->setY($y+ $lineHeight / 2);
 
+				// Displays player nickname
 				$nameLabel = new Label();
 				$teamScoreFrame->addChild($nameLabel);
 				$nameLabel->setHorizontalAlign($nameLabel::LEFT);
-				$nameLabel->setX($width * -0.3 );
+				$nameLabel->setX($width * -0.35 );
 				$nameLabel->setSize($width * 0.6 , $lineHeight);
 				$nameLabel->setTextSize(1);
-				$nameLabel->setText($player->nickname);
+				$nameLabel->setText($this->normalizeName($player->nickname));
 				$nameLabel->setTextEmboss(true);
 
 				//Quad with Spec action
@@ -497,7 +499,9 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 				$quad->setStyles(Quad_Bgs1InRace::STYLE, Quad_Bgs1InRace::SUBSTYLE_BgCardList);
 				$quad->setSize($width * 0.96, $lineHeight);
 				$quad->setAction(self::ACTION_SPEC . '.' . $player->login);
+
 				$displayedPlayers += 1;
+				$index += 1;
 			}
 		}
 		else {
@@ -513,8 +517,8 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 				$teamScoreFrame = new Frame();
 				$frame->addChild($teamScoreFrame);
 				$teamScoreFrame->setPosition(0, $y);
-				//$teamScoreFrame->setY($y+ $lineHeight / 2);
 
+				// Displays player mapPoints
 				$rankLabel = new Label();
 				$teamScoreFrame->addChild($rankLabel);
 				$rankLabel->setHorizontalAlign($rankLabel::LEFT);
@@ -523,18 +527,19 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 				$rankLabel->setTextSize(1);
 				$rankLabel->setTextPrefix('$o');
 				$rankLabel->setText($player->mapPoints);
-
 				$rankLabel->setTextEmboss(true);
 
+				// Displays player nickname
 				$nameLabel = new Label();
 				$teamScoreFrame->addChild($nameLabel);
 				$nameLabel->setHorizontalAlign($nameLabel::LEFT);
-				$nameLabel->setX($width * -0.3 );
+				$nameLabel->setX($width * -0.35 );
 				$nameLabel->setSize($width * 0.6 , $lineHeight);
 				$nameLabel->setTextSize(1);
-				$nameLabel->setText($player->nickname);
+				$nameLabel->setText($this->normalizeName($player->nickname));
 				$nameLabel->setTextEmboss(true);
 
+				// Displays player current match best time
 				$timeLabel = new Label();
 				$teamScoreFrame->addChild($timeLabel);
 				$timeLabel->setHorizontalAlign($timeLabel::RIGHT);
@@ -557,14 +562,16 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 			}
 		}
 
+		// This block is used for making space in between players and team scores
 		$y = -1. - $index * $lineHeight;
 		$blankFrame = new Frame();
 		$frame->addChild($blankFrame);
 		$blankFrame->setPosition(0, $y);
-
 		$index += 1;
 
+		// Displays team scores
 		for($i = $this->matchScore->round; $i >= 1; $i -= 1) {
+			// We make sure that data for current round exists
 			if(!array_key_exists($i, $this->matchScore->blueTeamPlayerPointsSum) &&
 			   !array_key_exists($i, $this->matchScore->redTeamPlayerPointsSum) &&
 			   !array_key_exists($i, $this->matchScore->mapPointsBlueTeam) &&
@@ -580,7 +587,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 			$frame->addChild($teamScoreFrame);
 			$teamScoreFrame->setPosition(0, $y);
 
-			//Rank
+			// Displays round count
 			$rankLabel = new Label();
 			$teamScoreFrame->addChild($rankLabel);
 			$rankLabel->setHorizontalAlign($rankLabel::LEFT);
@@ -591,17 +598,17 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 			$rankLabel->setText("r{$i}");
 			$rankLabel->setTextEmboss(true);
 
-			//Name
+			// Displays player points sum for both teams
 			$nameLabel = new Label();
 			$teamScoreFrame->addChild($nameLabel);
 			$nameLabel->setHorizontalAlign($nameLabel::LEFT);
-			$nameLabel->setX($width * -0.3 );
+			$nameLabel->setX($width * -0.22 );
 			$nameLabel->setSize($width * 0.6 , $lineHeight);
 			$nameLabel->setTextSize(1);
 			$nameLabel->setText("Points: \$33F{$this->matchScore->blueTeamPlayerPointsSum[$i]}\$FFF<>\$F30{$this->matchScore->redTeamPlayerPointsSum[$i]}");
 			$nameLabel->setTextEmboss(true);
 
-			//Time
+			// Displays mapPoints for both teams
 			$timeLabel = new Label();
 			$teamScoreFrame->addChild($timeLabel);
 			$timeLabel->setHorizontalAlign($timeLabel::RIGHT);
@@ -610,12 +617,6 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener {
 			$timeLabel->setTextSize(1);
 			$timeLabel->setText("\$33F{$this->matchScore->mapPointsBlueTeam[$i]}\$fff - \$F30{$this->matchScore->mapPointsRedTeam[$i]}");
 			$timeLabel->setTextEmboss(true);
-
-			/*$quad = new Quad();
-			$teamScoreFrame->addChild($quad);
-			$quad->setStyles(Quad_Bgs1InRace::STYLE, Quad_Bgs1InRace::SUBSTYLE_BgCardList);
-			$quad->setSize($width * 0.5, $lineHeight);
-			$quad->setHorizontalAlign($quad::RIGHT);*/
 
 			$displayedTeamScore += 1;
 			$index += 1;

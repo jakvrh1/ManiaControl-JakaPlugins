@@ -10,6 +10,7 @@ namespace JakaPlugins;
 
 
 class TrackmaniaPlayer {
+
 	public $login;
 	public $nickname;
 	public $bestTime;
@@ -32,6 +33,7 @@ class TrackmaniaPlayer {
 		$this->teamId = $teamId;
 	}
 
+	// Used to sort players in array by mapPoints
 	static public function mapPointsSort($a, $b) {
 		return $a->mapPoints < $b->mapPoints;
 	}
