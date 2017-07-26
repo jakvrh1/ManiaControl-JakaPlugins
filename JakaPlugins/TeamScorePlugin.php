@@ -856,6 +856,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener, Manial
 	public function unload() {
 		//$this->maniaControl = null;
 		$this->resetScores();
+		$this->closeWidget(self::SETTING_TEAMSCORE_TITLE);
 	}
 
 	/**
