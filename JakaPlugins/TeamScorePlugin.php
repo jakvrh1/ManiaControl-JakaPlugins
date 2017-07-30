@@ -38,7 +38,7 @@ class TeamScorePlugin implements Plugin, CallbackListener, TimerListener, Manial
 	 */
 	// TODO: Maintain plugin metadata constants
 	const ID      = 120;
-	const VERSION = 1.3;
+	const VERSION = 1.31;
 	const NAME                          = 'Team Score Plugin';
 	const AUTHOR                        = 'Jaka Vrhovec';
 
