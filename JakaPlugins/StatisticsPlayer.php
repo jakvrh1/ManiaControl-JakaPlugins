@@ -20,11 +20,11 @@ class StatisticsPlayer {
 	public function __construct($nickname, $login) {
 		$this->allTimes = array();
 		$this->bestTime = -1;
-		$this->rounds = 0;
-		$this->giveUps = 0;
+		$this->rounds   = 0;
+		$this->giveUps  = 0;
 
 		$this->nickname = $nickname;
-		$this->login = $login;
+		$this->login    = $login;
 	}
 
 	static public function bestTimeSort($a, $b) {

@@ -22,15 +22,15 @@ class TrackmaniaPlayer {
 	public $teamId;
 
 	public function __construct($login, $nickname, $bestTime, $roundPoints, $mapPoints, $matchPoints, $teamId, $isSpectator = false) {
-		$this->login = $login;
-		$this->nickname = $nickname;
-		$this->bestTime = $bestTime;
-		$this->roundPoints = $roundPoints;
-		$this->mapPoints = $mapPoints;
-		$this->matchPoints = $matchPoints;
+		$this->login           = $login;
+		$this->nickname        = $nickname;
+		$this->bestTime        = $bestTime;
+		$this->roundPoints     = $roundPoints;
+		$this->mapPoints       = $mapPoints;
+		$this->matchPoints     = $matchPoints;
 		$this->currentBestTime = -1;
-		$this->isSpectator = $isSpectator;
-		$this->teamId = $teamId;
+		$this->isSpectator     = $isSpectator;
+		$this->teamId          = $teamId;
 	}
 
 	// Used to sort players in array by mapPoints

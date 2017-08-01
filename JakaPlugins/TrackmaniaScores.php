@@ -24,12 +24,12 @@ class TrackmaniaScores {
 		$this->round = 0;
 
 		$this->mapPointsBlueTeam = array();
-		$this->mapPointsRedTeam = array();
+		$this->mapPointsRedTeam  = array();
 
 		$this->blueTeamPlayerPointsSum = array();
-		$this->redTeamPlayerPointsSum = array();
+		$this->redTeamPlayerPointsSum  = array();
 
 		$this->blueTeamPlayers = array();
-		$this->redTeamPlayers = array();
+		$this->redTeamPlayers  = array();
 	}
 }

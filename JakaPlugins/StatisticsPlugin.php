@@ -1,26 +1,27 @@
 <?php
 // TODO: Maintain plugin namespace using your name or something similar
 namespace JakaPlugins;
-use ManiaControl\Callbacks\CallbackListener;
-use ManiaControl\Callbacks\Structures\TrackMania\OnStartLineEventStructure;
-use ManiaControl\Callbacks\TimerListener;
-use ManiaControl\Callbacks\Structures\Common\BasePlayerTimeStructure;
-use ManiaControl\Callbacks\Structures\TrackMania\OnWayPointEventStructure;
-use ManiaControl\ManiaControl;
-use ManiaControl\Players\Player;
-use ManiaControl\Plugins\Plugin;
-use ManiaControl\Callbacks\Callbacks;
-use FML\ManiaLink;
+
 use FML\Controls\Frame;
 use FML\Controls\Label;
 use FML\Controls\Quad;
-use ManiaControl\Utils\Formatter;
-use ManiaControl\Manialinks\ManialinkManager;
-use ManiaControl\Manialinks\ManialinkPageAnswerListener;
-use FML\Script\Features\Paging;
-use ManiaControl\Manialinks\LabelLine;
 use FML\Controls\Quads\Quad_BgsPlayerCard;
 use FML\Controls\Quads\Quad_Icons64x64_1;
+use FML\ManiaLink;
+use FML\Script\Features\Paging;
+use ManiaControl\Callbacks\CallbackListener;
+use ManiaControl\Callbacks\Callbacks;
+use ManiaControl\Callbacks\Structures\Common\BasePlayerTimeStructure;
+use ManiaControl\Callbacks\Structures\TrackMania\OnStartLineEventStructure;
+use ManiaControl\Callbacks\Structures\TrackMania\OnWayPointEventStructure;
+use ManiaControl\Callbacks\TimerListener;
+use ManiaControl\ManiaControl;
+use ManiaControl\Manialinks\LabelLine;
+use ManiaControl\Manialinks\ManialinkManager;
+use ManiaControl\Manialinks\ManialinkPageAnswerListener;
+use ManiaControl\Players\Player;
+use ManiaControl\Plugins\Plugin;
+use ManiaControl\Utils\Formatter;
 
 // TODO: Maintain plugin class PHPDoc
 /**
@@ -43,40 +44,42 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	 */
 
 	// Statistics
-	const SETTING_STATISTICS_TITLE = 'Statistics Plugin';
-	const SETTING_STATISTICS = 'Statistics are displayed';
-	const SETTING_STATISTICS_POSX = 'Statistics Position: X';
-	const SETTING_STATISTICS_POSY = 'Statistics Position: Y';
-	const SETTING_STATISTICS_WIDTH = 'Statistics Width';
+	const SETTING_STATISTICS_TITLE      = 'Statistics Plugin';
+	const SETTING_STATISTICS            = 'Statistics are displayed';
+	const SETTING_STATISTICS_POSX       = 'Statistics Position: X';
+	const SETTING_STATISTICS_POSY       = 'Statistics Position: Y';
+	const SETTING_STATISTICS_WIDTH      = 'Statistics Width';
 	const SETTING_STATISTICS_LINESCOUNT = 'Statistics lines';
 
-	const SETTING_BUTTON = "Statistics.button";
+	const SETTING_BUTTON             = "Statistics.button";
 	const SETTING_BUTTON_TITLE_START = "Start";
-	const SETTING_BUTTON_TITLE_STOP = "Stop";
-	const SETTING_BUTTON_POSX = 'Button Position: X';
-	const SETTING_BUTTON_POSY = 'Button Position: Y';
-	const SETTING_BUTTON_HEIGHT = 6;
-	const SETTING_BUTTON_WIDTH = 10;
+	const SETTING_BUTTON_TITLE_STOP  = "Stop";
+	const SETTING_BUTTON_POSX        = 'Button Position: X';
+	const SETTING_BUTTON_POSY        = 'Button Position: Y';
+	const SETTING_BUTTON_HEIGHT      = 6;
+	const SETTING_BUTTON_WIDTH       = 10;
 
 	const SETTING_LINE_HEIGHT = 4;
 
 	const ACTION_STATISTICS = "Statistics.action";
-	const ACTION_BUTTON = "Button.action";
-	const ACTION_RESTART = "Statistics.Restart";
+	const ACTION_BUTTON     = "Button.action";
+	const ACTION_RESTART    = "Statistics.Restart";
 
 	// Properties
-	public $playedMaps = array();
+	public $playedMaps     = array();
 	public $playerIsSavign = array();
-	public $players = array();
-	public $giveUpLock = array();
+	public $players        = array();
+	public $giveUpLock     = array();
 
 	/** @var ManiaControl $maniaControl */
 	private $maniaControl = null;
+
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::prepare()
 	 */
 	public static function prepare(ManiaControl $maniaControl) {
 	}
+
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::load()
 	 */
@@ -99,7 +102,7 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONGIVEUP, $this, 'handleOnGiveUp');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::ENDMAP, $this, 'handleEndMap');
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_ONEVENTSTARTLINE, $this, 'handleOnEventStartLine');
-		
+
 		$this->maniaControl->getManialinkManager()->registerManialinkPageAnswerListener(self::ACTION_STATISTICS, $this, 'handleStatisticsButtonPressed');
 		$this->maniaControl->getManialinkManager()->registerManialinkPageAnswerListener(self::ACTION_BUTTON, $this, 'handleButtonPressed');
 		$this->maniaControl->getManialinkManager()->registerManialinkPageAnswerListener(self::ACTION_RESTART, $this, 'handleButtonRestart');
@@ -112,20 +115,20 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 
 	public function handleButtonRestart(array $callback, Player $player) {
 		$login = $player->login;
-		if(array_key_exists($login, $this->playerIsSavign)) {
+		if (array_key_exists($login, $this->playerIsSavign)) {
 			$this->players[$login] = new StatisticsPlayer($player->nickname, $login);
 		}
 	}
 
 	public function handleOnEventStartLine(OnStartLineEventStructure $structure) {
-		if(array_key_exists($structure->getLogin(), $this->giveUpLock)) {
+		if (array_key_exists($structure->getLogin(), $this->giveUpLock)) {
 			unset($this->giveUpLock[$structure->getLogin()]);
 		}
 	}
 
 	public function handleEndMap() {
-		$this->playerIsSavign = array();
-		$mapId = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
+		$this->playerIsSavign     = array();
+		$mapId                    = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
 		$this->playedMaps[$mapId] = array();
 
 		foreach ($this->players as $player) {
@@ -134,7 +137,7 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	}
 
 	public function savePlayerToCurrentMap($player) {
-		$mapId = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
+		$mapId                                    = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
 		$this->playedMaps[$mapId][$player->login] = $player;
 	}
 
@@ -148,15 +151,15 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	public function handleButtonPressed(array $callback, Player $player) {
 		$login = $player->login;
 
-		if(array_key_exists($login, $this->playerIsSavign)) {
+		if (array_key_exists($login, $this->playerIsSavign)) {
 			unset($this->playerIsSavign[$login]);
-			if(array_key_exists($login, $this->players)) {
+			if (array_key_exists($login, $this->players)) {
 				$this->savePlayerToCurrentMap($this->players[$login]);
 			}
 
 		} else {
 			$this->playerIsSavign[$login] = true;
-			$this->players[$login] = new StatisticsPlayer($player->nickname, $login);
+			$this->players[$login]        = new StatisticsPlayer($player->nickname, $login);
 		}
 		$this->displayButtonWidget($login);
 	}
@@ -175,10 +178,10 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	public function handle1Seconds() {
 		$this->displayStatisticsWidget(false);
 
-		foreach($this->maniaControl->getPlayerManager()->getPlayers() as $player) {
-			if($player->isSpectator) {
+		foreach ($this->maniaControl->getPlayerManager()->getPlayers() as $player) {
+			if ($player->isSpectator) {
 				$this->maniaControl->getManialinkManager()->hideManialink(self::SETTING_BUTTON, $player->login);
-				if(array_key_exists($player->login, $this->playerIsSavign)) {
+				if (array_key_exists($player->login, $this->playerIsSavign)) {
 					unset($this->playerIsSavign[$player->login]);
 				}
 			} else {
@@ -188,14 +191,14 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	}
 
 	public function handleFinishCallback(OnWayPointEventStructure $structure) {
-		$login = $structure->getLogin();
+		$login                    = $structure->getLogin();
 		$this->giveUpLock[$login] = true;
 
-		if(array_key_exists($login, $this->playerIsSavign)) {
+		if (array_key_exists($login, $this->playerIsSavign)) {
 			$this->players[$login]->rounds++;
 			$this->players[$login]->allTimes[] = $structure->getRaceTime();
 
-			if($structure->getRaceTime() < $this->players[$login]->bestTime || $this->players[$login]->bestTime == -1) {
+			if ($structure->getRaceTime() < $this->players[$login]->bestTime || $this->players[$login]->bestTime == -1) {
 				$this->players[$login]->bestTime = $structure->getRaceTime();
 			}
 		}
@@ -204,11 +207,11 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	public function handleOnGiveUp(BasePlayerTimeStructure $structure) {
 		$login = $structure->getLogin();
 
-		if(array_key_exists($login, $this->giveUpLock)) {
+		if (array_key_exists($login, $this->giveUpLock)) {
 			return;
 		}
 
-		if(array_key_exists($login, $this->playerIsSavign)) {
+		if (array_key_exists($login, $this->playerIsSavign)) {
 			$this->players[$login]->rounds++;
 			$this->players[$login]->giveUps++;
 		}
@@ -218,8 +221,7 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	public function displayStatisticsWidget($login) {
 		if ($this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS)) {
 			$this->statisticsWidget($login);
-		}
-		else {
+		} else {
 			$this->closeWidget(self::SETTING_STATISTICS);
 		}
 	}
@@ -233,14 +235,14 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 		$height = $this->maniaControl->getManialinkManager()->getStyleManager()->getListWidgetsHeight();
 
 		// get PlayerList
-		$mapId = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
+		$mapId   = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
 		$players = null;
 
-		if(array_key_exists($mapId, $this->playedMaps)) {
+		if (array_key_exists($mapId, $this->playedMaps)) {
 			$players = $this->playedMaps[$mapId];
 		}
 
-		if($players == null) {
+		if ($players == null) {
 			return;
 		}
 		usort($players, array('JakaPlugins\StatisticsPlayer', 'bestTimeSort'));
@@ -276,11 +278,11 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 		$labelLine->addLabelEntryText('Average time', $posX + 120);
 		$labelLine->render();
 
-		$index = 0;
+		$index     = 0;
 		$posY      = $height / 2 - 10;
 		$pageFrame = null;
 
-		foreach($players as $player) {
+		foreach ($players as $player) {
 			if ($index % 15 === 0) {
 				$pageFrame = new Frame();
 				$frame->addChild($pageFrame);
@@ -315,7 +317,7 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 			$labelLine->addLabelEntryText($player->nickname, $posX + 5);
 			$labelLine->addLabelEntryText($player->rounds, $posX + 30);
 			$labelLine->addLabelEntryText($player->giveUps, $posX + 60);
-			if($player->bestTime != -1) {
+			if ($player->bestTime != -1) {
 				$labelLine->addLabelEntryText(Formatter::formatTime($player->bestTime), $posX + 90);
 			}
 			$labelLine->addLabelEntryText(Formatter::formatTime($this->average($player)), $posX + 120);
@@ -332,16 +334,16 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	}
 
 	public function buttonWidget($login) {
-		$posX         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_BUTTON_POSX);
-		$posY         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_BUTTON_POSY);
+		$posX = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_BUTTON_POSX);
+		$posY = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_BUTTON_POSY);
 
-		$labelStyle         = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultLabelStyle();
-		$quadStyle          = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadStyle();
-		$quadSubstyle       = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadSubstyle();
+		$labelStyle   = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultLabelStyle();
+		$quadStyle    = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadStyle();
+		$quadSubstyle = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadSubstyle();
 
 		$maniaLink = new ManiaLink(self::SETTING_BUTTON);
 
-		if(array_key_exists($login, $this->playerIsSavign)) {
+		if (array_key_exists($login, $this->playerIsSavign)) {
 			// mainframe
 			$frame = new Frame();
 			$maniaLink->addChild($frame);
@@ -360,13 +362,13 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 			$titleLabel->setWidth(self::SETTING_BUTTON_WIDTH);
 			$titleLabel->setStyle($labelStyle);
 			$titleLabel->setTextSize(1);
-			$titleLabel->setText("\$F00".self::SETTING_BUTTON_TITLE_STOP);
+			$titleLabel->setText("\$F00" . self::SETTING_BUTTON_TITLE_STOP);
 			$titleLabel->setAction(self::ACTION_BUTTON);
 
 			$restart = new Label();
 			$frame->addChild($restart);
 			$restart->setPosition(10, self::SETTING_LINE_HEIGHT * -0.75);
-			$restart->setWidth(self::SETTING_BUTTON_WIDTH*1.2);
+			$restart->setWidth(self::SETTING_BUTTON_WIDTH * 1.2);
 			$restart->setStyle($labelStyle);
 			$restart->setTextSize(1);
 			$restart->setText("\$09FRestart");
@@ -378,7 +380,7 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 			$round->setWidth(self::SETTING_BUTTON_WIDTH);
 			$round->setStyle($labelStyle);
 			$round->setTextSize(1);
-			$round->setText("r".$this->players[$login]->rounds);
+			$round->setText("r" . $this->players[$login]->rounds);
 
 			$giveUps = new Label();
 			$frame->addChild($giveUps);
@@ -386,12 +388,12 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 			$giveUps->setWidth(self::SETTING_BUTTON_WIDTH);
 			$giveUps->setStyle($labelStyle);
 			$giveUps->setTextSize(1);
-			$giveUps->setText("g".$this->players[$login]->giveUps);
+			$giveUps->setText("g" . $this->players[$login]->giveUps);
 
 			$averageTime = new Label();
 			$frame->addChild($averageTime);
 			$averageTime->setPosition(10, self::SETTING_LINE_HEIGHT * -1.7);
-			$averageTime->setWidth(self::SETTING_BUTTON_WIDTH*2);
+			$averageTime->setWidth(self::SETTING_BUTTON_WIDTH * 2);
 			$averageTime->setStyle($labelStyle);
 			$averageTime->setTextSize(1);
 			$averageTime->setText(Formatter::formatTime($this->average($this->players[$login])));
@@ -417,7 +419,7 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 			$titleLabel->setWidth(self::SETTING_BUTTON_WIDTH);
 			$titleLabel->setStyle($labelStyle);
 			$titleLabel->setTextSize(1);
-			$titleLabel->setText("\$0F0".self::SETTING_BUTTON_TITLE_START);
+			$titleLabel->setText("\$0F0" . self::SETTING_BUTTON_TITLE_START);
 
 			$titleLabel->setTranslate(true);
 		}
@@ -427,21 +429,21 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 
 
 	public function average($player) {
-		if(count($player->allTimes) == 0) {
+		if (count($player->allTimes) == 0) {
 			return 0;
 		}
 		return array_sum($player->allTimes) / count($player->allTimes);
 	}
 
 	public function statisticsWidget($login) {
-		$lines       = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_LINESCOUNT);
-		$width        = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_WIDTH);
-		$posX         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_POSX);
-		$posY         = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_POSY);
+		$lines = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_LINESCOUNT);
+		$width = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_WIDTH);
+		$posX  = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_POSX);
+		$posY  = $this->maniaControl->getSettingManager()->getSettingValue($this, self::SETTING_STATISTICS_POSY);
 
-		$labelStyle         = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultLabelStyle();
-		$quadStyle          = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadStyle();
-		$quadSubstyle       = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadSubstyle();
+		$labelStyle   = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultLabelStyle();
+		$quadStyle    = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadStyle();
+		$quadSubstyle = $this->maniaControl->getManialinkManager()->getStyleManager()->getDefaultQuadSubstyle();
 
 
 		$maniaLink = new ManiaLink(self::SETTING_STATISTICS);
@@ -470,25 +472,25 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 		$titleLabel->setText(self::SETTING_STATISTICS_TITLE);
 		$titleLabel->setTranslate(true);
 
-		$mapId = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
+		$mapId   = $this->maniaControl->getMapManager()->getCurrentMap()->uid;
 		$players = null;
 
-		if(array_key_exists($mapId, $this->playedMaps)) {
+		if (array_key_exists($mapId, $this->playedMaps)) {
 			$players = $this->playedMaps[$mapId];
 		}
 
-		if($players == null) {
+		if ($players == null) {
 			$this->maniaControl->getManialinkManager()->sendManialink($maniaLink, $login);
 			return;
 		}
 		usort($players, array('JakaPlugins\StatisticsPlayer', 'bestTimeSort'));
 
 		$index = 2;
-		foreach($players as $player) {
-			if($index >= $lines + 2) {
+		foreach ($players as $player) {
+			if ($index >= $lines + 2) {
 				break;
 			}
-			if($this->average($player) == 0) {
+			if ($this->average($player) == 0) {
 				continue;
 			}
 
@@ -506,9 +508,9 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 			$rankLabel->setSize($width * 0.1, self::SETTING_LINE_HEIGHT);
 			$rankLabel->setTextSize(1);
 			$rankLabel->setTextPrefix('$o$fff');
-			if($player->giveUps > 0) {
-				$rankLabel->setText($player->rounds."-".$player->giveUps);
-			}else {
+			if ($player->giveUps > 0) {
+				$rankLabel->setText($player->rounds . "-" . $player->giveUps);
+			} else {
 				$rankLabel->setText($player->rounds);
 			}
 
@@ -518,8 +520,8 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 			$nameLabel = new Label();
 			$playerFrame->addChild($nameLabel);
 			$nameLabel->setHorizontalAlign($nameLabel::LEFT);
-			$nameLabel->setX($width * -0.35 );
-			$nameLabel->setSize($width * 0.56 , self::SETTING_LINE_HEIGHT);
+			$nameLabel->setX($width * -0.35);
+			$nameLabel->setSize($width * 0.56, self::SETTING_LINE_HEIGHT);
 			$nameLabel->setTextSize(1);
 			$nameLabel->setText(Formatter::stripLinks($player->nickname));
 			$nameLabel->setTextEmboss(true);
@@ -560,24 +562,28 @@ class StatisticsPlugin implements Plugin, CallbackListener, TimerListener, Mania
 	public static function getId() {
 		return self::ID;
 	}
+
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::getName()
 	 */
 	public static function getName() {
 		return self::NAME;
 	}
+
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::getVersion()
 	 */
 	public static function getVersion() {
 		return self::VERSION;
 	}
+
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::getAuthor()
 	 */
 	public static function getAuthor() {
 		return self::AUTHOR;
 	}
+
 	/**
 	 * @see \ManiaControl\Plugins\Plugin::getDescription()
 	 */
