@@ -46,8 +46,8 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 	const STAT_PLAYER_DONATIONS            = 'Donated Planets';
 	const SETTING_MIN_AMOUNT_SHOWN         = 'Minimum Donation amount to get shown';
 
-	const SKIP_PRICE   = 1500;//1500;
-	const REPLAY_PRICE = 550;//550;
+	const SKIP_PRICE   = 5000;//1500;
+	const REPLAY_PRICE = 300;//550;
 	const FREE_ACTION = -1;
 
 	/**
@@ -111,14 +111,19 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_POSX, -116.8);
 		$this->maniaControl->getSettingManager()->initSetting($this, self::SETTING_POSY, 90);
 
-		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::ENDMAP, $this, 'handleEndMap');
+		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_SCORES, $this, 'handleEndMap');
 		$this->maniaControl->getManialinkManager()->registerManialinkPageAnswerListener(self::ACTION_REPLAY, $this, 'handleReplayAction');
 		$this->maniaControl->getManialinkManager()->registerManialinkPageAnswerListener(self::ACTION_SKIP, $this, 'handleSkipAction');
+		$this->maniaControl->getTimerManager()->registerTimerListening($this, 'handle1Seconds', 1000);
 
 		$this->updateManialink = true;
 		$this->replaySkipWidget(false);
 
 		return true;
+	}
+
+	public function handle1Seconds() {
+		$this->replaySkipWidget(false);
 	}
 
 	public function replaySkipWidget($login) {
@@ -169,10 +174,9 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 
 	public function handleEndMap() {
 		if ($this->action == self::IS_REPLAY) {
-			//var_dump("Map will be replayed!");
+			$this->maniaControl->getMapManager()->getMapActions()->restartMap();
 			$this->counter++;
 			$this->action = self::FREE_ACTION;
-			$this->maniaControl->getClient()->restartMap();
 		} else if ($this->action == self::IS_SKIP) {
 			//var_dump("Map was skipped");
 			$this->counter = 1;
@@ -253,6 +257,7 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 			//var_dump("ACTION IS SKIP");
 			//$this->action = self::FREE_ACTION;
 			$this->maniaControl->getClient()->nextMap();
+			$this->maniaControl->getMapManager()->getMapActions()->skipMap();
 		}
 
 	}
