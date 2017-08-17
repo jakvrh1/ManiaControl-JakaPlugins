@@ -28,7 +28,7 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 	 */
 
 	const ID      = 123;
-	const VERSION = 1.2;
+	const VERSION = 1.3;
 	const NAME    = 'Pay for Replay/Skip Plugin';
 	const AUTHOR  = 'Jaka Vrhovec';
 
@@ -46,8 +46,8 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 	const STAT_PLAYER_DONATIONS            = 'Donated Planets';
 	const SETTING_MIN_AMOUNT_SHOWN         = 'Minimum Donation amount to get shown';
 
-	const SKIP_PRICE   = 5;//5000;
-	const REPLAY_PRICE = 4;//300;
+	const SKIP_PRICE   = 5000;//5000;
+	const REPLAY_PRICE = 300;//300;
 
 
 	/**
