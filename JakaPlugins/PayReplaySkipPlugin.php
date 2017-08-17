@@ -28,7 +28,7 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 	 */
 
 	const ID      = 123;
-	const VERSION = 1.0;
+	const VERSION = 1.2;
 	const NAME    = 'Pay for Replay/Skip Plugin';
 	const AUTHOR  = 'Jaka Vrhovec';
 
@@ -46,13 +46,15 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 	const STAT_PLAYER_DONATIONS            = 'Donated Planets';
 	const SETTING_MIN_AMOUNT_SHOWN         = 'Minimum Donation amount to get shown';
 
-	const SKIP_PRICE   = 5000;//1500;
-	const REPLAY_PRICE = 300;//550;
-	const FREE_ACTION = -1;
+	const SKIP_PRICE   = 5;//5000;
+	const REPLAY_PRICE = 4;//300;
+
 
 	/**
 	 * Private Properties
 	 */
+	const LOCK = -2;
+	const FREE_ACTION = -1;
 	const NO_ACTION   = 0;
 	const IS_REPLAY   = 1;
 	const IS_SKIP     = 2;
@@ -114,12 +116,20 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::TM_SCORES, $this, 'handleEndMap');
 		$this->maniaControl->getManialinkManager()->registerManialinkPageAnswerListener(self::ACTION_REPLAY, $this, 'handleReplayAction');
 		$this->maniaControl->getManialinkManager()->registerManialinkPageAnswerListener(self::ACTION_SKIP, $this, 'handleSkipAction');
+		$this->maniaControl->getCallbackManager()->registerCallbackListener(Callbacks::BEGINMAP, $this, 'handleBeginMap');
 		$this->maniaControl->getTimerManager()->registerTimerListening($this, 'handle1Seconds', 1000);
 
 		$this->updateManialink = true;
 		$this->replaySkipWidget(false);
 
 		return true;
+	}
+
+	public function handleBeginMap() {
+		if($this->action == self::LOCK) {
+			$this->action = self::FREE_ACTION;
+		}
+
 	}
 
 	public function handle1Seconds() {
@@ -184,8 +194,8 @@ class PayReplaySkipPlugin implements Plugin, TimerListener, ManialinkPageAnswerL
 		} else {
 			//var_dump("No actions done!");
 			$this->counter = 1;
-			$this->action  = self::FREE_ACTION;
 		}
+		$this->action = self::LOCK;
 	}
 
 	public function handleReplayAction(array $callback, Player $player) {
